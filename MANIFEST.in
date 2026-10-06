@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
+exclude .eslintrc.* CLAUDE.md requirements.txt requirements-dev.txt ruff.toml package-lock.json package.json
 recursive-include girder_flycut *.py *.json *.lbrn2
 prune girder_flycut/web_client
 include girder_flycut/web_client/dist/girder-plugin-flycut.umd.cjs
