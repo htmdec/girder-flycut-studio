@@ -52,9 +52,7 @@ Automatic Stack IDs use the existing server allocator and are locked in the form
 the API checks the automatic ID format. IDs are checked for collisions at submit.
 
 Field-name recommendations are the sorted, deduplicated union of required custom
-field names across all presets. Saved configurations never contribute. A preset
-that prohibits extra fields hides recommendations and disables adding fields.
-Preset rules block submission and cannot be overridden by acknowledging warnings.
+field names across all presets.
 
 With no enabled laser entries (including an empty list), all flyer settings are
 inherited from the template. This requires validation acknowledgement. Generation
