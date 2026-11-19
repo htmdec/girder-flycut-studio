@@ -101,12 +101,13 @@ class ConfigRoutes:
     @gated
     def options(self, user):
         presets = load_presets()
+        ranked = sorted({name for preset in presets for name in preset.get("custom_fields", {})})
         return {
             "workspaceFolderId": studio_settings.policy()["workspace_folder_id"],
             "materials": foil_materials(user),
             "templates": CATALOG["templates"],
             "presets": presets,
-            "cache": {"operators": [user["login"]], "field_names": CATALOG["field_names"]},
+            "cache": {"operators": [user["login"]], "field_names": ranked},
         }
 
     @access.user

@@ -919,3 +919,30 @@ def test_unrelated_upload_remains_in_drafts(server, enabled, user, fsAssetstore,
     item = Item().load(file["itemId"], force=True)
     assert item["folderId"] == root["_id"]
     assert CONFIG_FIELD not in item
+
+
+def test_custom_field_suggestions_use_only_presets(server, enabled, user):
+    def names():
+        return server.request("/flycut/options", user=user).json["cache"]["field_names"]
+
+    def save(fields, identifier=""):
+        config = configuration()
+        config["custom_fields"] = fields
+        response = server.request(
+            "/flycut/config",
+            method="POST",
+            user=user,
+            params={"config": json.dumps(config), "id": identifier},
+        )
+        assertStatusOk(response)
+        return response.json["_id"]
+
+    from girder_flycut.presets import load_presets
+    expected = sorted({name for preset in load_presets() for name in preset.get("custom_fields", {})})
+    assert names() == expected
+    first = save({"thickness": 1, "batch": "A"})
+    save({"thickness": 2, "width": 3})
+    assert names() == expected
+    # Updating a draft changes its contribution instead of inflating usage.
+    save({"width": 4}, first)
+    assert names() == expected

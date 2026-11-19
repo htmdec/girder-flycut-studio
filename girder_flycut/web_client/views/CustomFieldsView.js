@@ -47,7 +47,7 @@ const CustomFieldsView = View.extend({
 
     initialize: function () {
         this.listenTo(this.collection, 'reset add remove', this.render);
-        this.listenTo(this.model, 'change:knownFieldNames', this.render);
+        this.listenTo(this.model, 'change:knownFieldNames', this.renderRecommendations);
     },
 
     tagName: 'details',
@@ -62,10 +62,9 @@ const CustomFieldsView = View.extend({
         this.$('#customList').html(this.collection.map((row) => customFieldRowTemplate({
             row: row.toJSON(), fixed: required.includes(row.get('name'))
         })).join(''));
+        this.$('#addCustomBtn').prop('disabled', this.model.activePreset()?.additional_custom_fields === false);
         const count = this.collection.length;
         this.$('#customCount').text(`${count} field${count === 1 ? '' : 's'}`);
-        this.$('#customFieldNames').html(this.model.get('knownFieldNames')
-            .map((name) => `<option value="${escapeHtml(name)}"></option>`).join(''));
         this.renderRecommendations();
         return this;
     },
@@ -73,6 +72,10 @@ const CustomFieldsView = View.extend({
     /** Field names this operator has used before and has not used here yet. */
     renderRecommendations: function () {
         const used = this.collection.names();
+        if (this.model.activePreset()?.additional_custom_fields === false) {
+            this.$('#fieldRecommendations').empty();
+            return;
+        }
         this.$('#fieldRecommendations').html(this.model.get('knownFieldNames')
             .filter((name) => !used.has(name))
             .slice(0, SUGGESTIONS)

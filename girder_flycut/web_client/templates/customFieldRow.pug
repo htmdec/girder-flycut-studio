@@ -5,7 +5,7 @@
 .custom-row(data-id=row.id)
   label
     | Field name
-    input(data-key='name', readonly=fixed, list='customFieldNames', autocomplete='off', value=row.name, placeholder='e.g. batch_code')
+    input(data-key='name', readonly=fixed, autocomplete='off', value=row.name, placeholder='e.g. batch_code')
   label
     | Value
     input(data-key='value', value=row.value, placeholder='Enter a value')
