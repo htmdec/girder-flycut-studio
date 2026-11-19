@@ -534,18 +534,22 @@ async function reopen(page, base, id) {
             (n) => document.querySelectorAll('.g-flycut-dashboard #laserList .laser-card').length === n,
             startingLasers, { timeout: 10000 });
         check('removing an entry puts the list back', await laserCards() === startingLasers);
-        // The form needs at least one entry, and says so rather than emptying.
+        // An empty list leaves all laser settings inherited from the template.
         while (await laserCards() > 1) {
             await page.locator('#laserList .laser-card .remove-laser').last().click();
             await page.waitForTimeout(250);
         }
         await page.locator('#laserList .laser-card .remove-laser').first().click();
         await page.waitForTimeout(400);
-        check('the last laser entry cannot be removed', await laserCards() === 1,
-            await textOf(page, '#toast'));
+        check('the last laser entry can be removed', await laserCards() === 0);
+        await page.click('.g-flycut-dashboard [data-tab="status"]');
+        check('an empty list warns about inheriting template settings',
+            (await textOf(page, '.g-flycut-dashboard')).includes('all parameters inherit the template original settings.'));
+        await page.click('.g-flycut-dashboard [data-tab="preview"]');
 
         // Entries are named for their position, so a reorder renames them --
         // which is why the swatches move and the names do not.
+        await page.click('#addLaserBtn');
         await page.click('#addLaserBtn');
         await page.waitForTimeout(300);
         const colorsBefore = await page.locator('#laserList .color-swatch')

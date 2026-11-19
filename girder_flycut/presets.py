@@ -1,4 +1,5 @@
 """Readable file-based workflow policies; never inferred from saved configurations."""
+
 import json
 import math
 import os
@@ -37,7 +38,12 @@ def validate_preset(config):
             continue
         for key, limits in preset.get("laser_limits", {}).items():
             value = row.get(key)
-            if type(value) not in (int, float) or not math.isfinite(value) or value < limits.get("min", -math.inf) or value > limits.get("max", math.inf):
+            if (
+                type(value) not in (int, float)
+                or not math.isfinite(value)
+                or value < limits.get("min", -math.inf)
+                or value > limits.get("max", math.inf)
+            ):
                 raise ValueError(f"Laser {key} violates preset limits.")
     fields = config.get("custom_fields", {})
     rules = preset.get("custom_fields", {})
@@ -63,5 +69,11 @@ def validate_preset(config):
                 raise ValueError(f"Custom field {name} must be finite.")
             fields[name] = value
         if any(key in rule for key in ("min", "max", "exclusive_min", "exclusive_max")):
-            if type(value) not in (int, float) or value < rule.get("min", -math.inf) or value > rule.get("max", math.inf) or value <= rule.get("exclusive_min", -math.inf) or value >= rule.get("exclusive_max", math.inf):
+            if (
+                type(value) not in (int, float)
+                or value < rule.get("min", -math.inf)
+                or value > rule.get("max", math.inf)
+                or value <= rule.get("exclusive_min", -math.inf)
+                or value >= rule.get("exclusive_max", math.inf)
+            ):
                 raise ValueError(f"Custom field {name} violates preset bounds.")

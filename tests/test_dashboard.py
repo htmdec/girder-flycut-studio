@@ -117,13 +117,14 @@ class AssignmentControlsTest(unittest.TestCase):
             files = generate(normalize_config(config, USER, CATALOG))
             source = ET.parse(Path(__file__).parents[1] / "girder_flycut/inputs/templates/5x5-stack.lbrn2").getroot()
             result = ET.fromstring(files["stack00005-layout.lbrn2"][0])
-            self.assertEqual([ET.tostring(c) for c in result.findall(".//CutSetting")],
-                             [ET.tostring(c) for c in source.findall(".//CutSetting")])
+            self.assertEqual(
+                [ET.tostring(c) for c in result.findall(".//CutSetting")],
+                [ET.tostring(c) for c in source.findall(".//CutSetting")],
+            )
             rows = list(csv.DictReader(io.StringIO(files["stack00005-inventory.csv"][0].decode())))
             metadata = json.loads(files["stack00005-metadata.json"][0])
             self.assertTrue(rows)
             self.assertEqual(float(rows[0]["laser_maxpower"]), float(metadata["flyers"][0]["laser_maxpower"]))
-
 
     def test_repeat_wrap_and_reserved_positions(self):
         source = ET.parse(Path(__file__).parents[1] / "girder_flycut/inputs/templates/5x5-stack.lbrn2").getroot()

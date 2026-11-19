@@ -7,8 +7,8 @@ import re
 
 from girder.utility import JsonEncoder
 
-from .schema import unpack
 from .presets import validate_preset
+from .schema import unpack
 
 
 def _validate_run_params(config, user, catalog, submitted):

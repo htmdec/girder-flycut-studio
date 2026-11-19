@@ -465,10 +465,15 @@ def test_lifecycle_replacement_files_and_mock_registration(server, enabled, user
     assertStatus(server.request(endpoint + "/files", method="DELETE", user=user), 409)
 
 
-def test_presets_disabled_preserve_explicit_fields(server, enabled, user):
-    assert server.request("/flycut/options", user=user).json["presets"] == []
+@pytest.mark.parametrize("preset_id", [None, "standard"])
+def test_presets_preserve_explicit_fields(server, enabled, user, preset_id):
+    options = server.request("/flycut/options", user=user)
+    assertStatusOk(options)
+    standard = next(preset for preset in options.json["presets"] if preset["id"] == "standard")
     config = configuration()
-    config["preset"] = "standard"
+    config["preset"] = preset_id
+    if preset_id:
+        config["custom_fields"] = dict.fromkeys(standard["custom_fields"]) | config["custom_fields"]
     result = server.request(
         "/flycut/config",
         method="POST",
@@ -476,7 +481,7 @@ def test_presets_disabled_preserve_explicit_fields(server, enabled, user):
         params={"config": json.dumps(config), "submit": True, "validated": True},
     )
     assertStatusOk(result)
-    assert result.json["config"]["preset"] is None
+    assert result.json["config"]["preset"] == preset_id
     assert result.json["config"]["custom_fields"] == config["custom_fields"]
 
 
@@ -938,6 +943,7 @@ def test_custom_field_suggestions_use_only_presets(server, enabled, user):
         return response.json["_id"]
 
     from girder_flycut.presets import load_presets
+
     expected = sorted({name for preset in load_presets() for name in preset.get("custom_fields", {})})
     assert names() == expected
     first = save({"thickness": 1, "batch": "A"})
