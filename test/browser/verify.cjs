@@ -453,6 +453,53 @@ async function reopen(page, base, id) {
             (await textOf(page, '#laserCount')).startsWith(`${startingLasers + 1} /`),
             await textOf(page, '#laserCount'));
 
+        const power = page.locator('#laserList .laser-card [data-key="power"]').first();
+        await power.fill('');
+        await power.pressSequentially('12.5');
+        check('typing multiple digits keeps focus and the full laser value',
+            await power.inputValue() === '12.5' && await power.evaluate((el) => el === document.activeElement));
+        await power.press('ArrowDown');
+        check('down arrow selects the same field on the next flyer',
+            await page.locator('#laserList .laser-card [data-key="power"]').nth(1)
+                .evaluate((el) => el === document.activeElement));
+        await page.keyboard.press('ArrowUp');
+        check('up arrow returns to the same field on the previous flyer',
+            await power.evaluate((el) => el === document.activeElement));
+        await power.press('Tab');
+        check('tab advances to the next parameter',
+            await page.locator('#laserList .laser-card [data-key="speed"]').first()
+                .evaluate((el) => el === document.activeElement));
+
+        await power.press('Enter');
+        const nextPower = page.locator('#laserList .laser-card [data-key="power"]').nth(1);
+        check('return moves to the next flyer power field',
+            await nextPower.evaluate((el) => el === document.activeElement));
+        await nextPower.press('Shift+Enter');
+        check('shift return moves to the previous flyer power field',
+            await power.evaluate((el) => el === document.activeElement));
+        await power.press('Shift+Enter');
+        check('shift return on the first flyer stays in place',
+            await power.evaluate((el) => el === document.activeElement));
+        await page.locator('#laserList .laser-card').last().locator('[data-key="speed"]').focus();
+        await page.keyboard.press('Enter');
+        check('return on the last flyer focuses Add laser setting',
+            await page.locator('#addLaserBtn').evaluate((el) => el === document.activeElement));
+        await page.keyboard.press('ArrowUp');
+        check('up arrow on Add returns to the last flyer power field',
+            await page.locator('#laserList .laser-card').last().locator('[data-key="power"]')
+                .evaluate((el) => el === document.activeElement));
+        await page.keyboard.press('Enter');
+        const beforeReturn = await laserCards();
+        await page.keyboard.press('+');
+        await page.keyboard.press('=');
+        check('plus and equals do not add flyers', await laserCards() === beforeReturn);
+        await page.keyboard.press('Enter');
+        check('return on Add creates a flyer and focuses its power field',
+            await laserCards() === beforeReturn + 1 &&
+            await page.locator('#laserList .laser-card').last().locator('[data-key="power"]')
+                .evaluate((el) => el === document.activeElement));
+        await page.locator('#laserList .laser-card').last().locator('.remove-laser').click();
+
         // Colours are how the preview and the generated file tell layers apart,
         // so two entries may not share one.
         const firstHex = page.locator('#laserList .laser-card .hex-editor').first();
