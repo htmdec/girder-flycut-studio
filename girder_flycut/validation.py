@@ -28,9 +28,9 @@ def _validate_run_params(config, user, catalog, submitted):
 
 
 def _validate_lasers(lasers):
-    """Between one and 28 layers, each a distinct colour with finite settings."""
-    if not isinstance(lasers, list) or not 1 <= len(lasers) <= 28:
-        raise ValueError("Provide between 1 and 28 laser settings.")
+    """Between zero and 28 layers, each a distinct colour with finite settings."""
+    if not isinstance(lasers, list) or not 0 <= len(lasers) <= 28:
+        raise ValueError("Provide between 0 and 28 laser settings.")
     colors = set()
     for laser in lasers:
         if not isinstance(laser, dict):
@@ -132,10 +132,8 @@ def normalize_builder_config(config, user, catalog):
         if not run.get(field) or run[field] not in {entry["id"] for entry in catalog[collection]}:
             raise ValueError(f"Invalid {field} selection.")
     lasers = result.get("laser_params", [])
-    if not isinstance(lasers, list) or not any(
-        isinstance(laser, dict) and laser.get("enabled", True) is not False for laser in lasers
-    ):
-        raise ValueError("Enable at least one laser parameter entry.")
+    if not isinstance(lasers, list) or len(lasers) > 28:
+        raise ValueError("Provide at most 28 laser settings.")
     fields = result.get("custom_fields", {})
     if not isinstance(fields, dict) or any(
         not name.strip() and value is not None and str(value).strip() for name, value in fields.items()
@@ -147,15 +145,17 @@ def normalize_builder_config(config, user, catalog):
         if name.strip()
     }
     run["stackid"] = run["stackid"].strip()
-    validate_preset(result)
     run["operator"] = str(run.get("operator") or "").strip() or user["login"]
     result["createdBy"] = str(user["_id"])
+    validate_preset(result)
     return result
 
 
 def builder_warnings(config, catalog):
     run = config.get("run_params", {})
     warnings = []
+    if not any(row.get("enabled", True) for row in config.get("laser_params", [])):
+        warnings.append("No laser parameter entries enabled; all parameters inherit the template original settings.")
     if not str(run.get("operator") or "").strip():
         warnings.append("Operator fallback")
     lasers = config.get("laser_params", [])

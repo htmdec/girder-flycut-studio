@@ -70,7 +70,7 @@ export function importedLasers(config = {}, savedSnapshot = false) {
             fromImport: savedSnapshot ? Boolean(values.from_import) : true,
             locked: savedSnapshot ? Boolean(values.from_import) : true
         }));
-    if (!entries.length && !savedSnapshot) {
+    if (!entries.length && !savedSnapshot && !Array.isArray(config.laser_params)) {
         return [{ isDefault: true }];
     }
     return entries;

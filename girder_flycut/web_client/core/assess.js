@@ -4,7 +4,7 @@
 export function assessConfiguration({ stackId, operator, lasers, fields, layers, repeat, wraparound, foilMaterial, template, duplicateStack = false, stackState = null, presetFields = [] }) {
     const requirements = [
         { ok: /^(?:F[0-9]{3,4}|[0-9A-HJKMNP-TV-Z]{5})$/.test(stackId.trim()), text: stackId.trim() ? 'Stack ID must match F###, F####, or five uppercase Crockford Base32 characters.' : 'Enter a Stack ID.', target: '#stackid' },
-        { ok: lasers.some((laser) => laser.enabled !== false), text: 'Enable at least one laser parameter entry.', target: lasers.length ? '#laserList [data-key="enabled"]' : '#addLaserBtn' },
+        { ok: true, text: 'No laser parameter entries enabled.', target: lasers.length ? '#laserList [data-key="enabled"]' : '#addLaserBtn' },
         { ok: fields.every((field) => !String(field.value ?? '').trim() || field.name.trim()), text: 'Name each custom field that has a value.', target: `.custom-row:nth-child(${fields.findIndex((field) => String(field.value ?? '').trim() && !field.name.trim()) + 1}) [data-key="name"]` },
         { ok: Boolean(foilMaterial), text: 'Select a foil material.', target: '#foilMaterial' },
         { ok: Boolean(template), text: 'Select a template.', target: '#template' }
@@ -15,6 +15,7 @@ export function assessConfiguration({ stackId, operator, lasers, fields, layers,
     const warnings = [];
     const warningTargets = [];
     const warn = (message, target) => { warnings.push(message); warningTargets.push(target); };
+    if (!lasers.some((laser) => laser.enabled !== false)) warn('No laser parameter entries enabled; all parameters inherit the template original settings.', '#addLaserBtn');
     if (duplicateStack && !blockedMessage) warn('This Stack ID already has a submitted configuration. Validate replacing the existing submitted configuration.', '#stackid');
     if (!operator.trim()) warn('Operator is empty; your username will be used.', '#operator');
     if (lasers.some((laser) => laser.enabled !== false && laser.isDefault)) warn('Some enabled layers still use default laser parameters.', `#laserList .laser-card:nth-child(${lasers.findIndex((laser) => laser.enabled !== false && laser.isDefault) + 1}) [data-key="power"]`);

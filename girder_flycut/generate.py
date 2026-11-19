@@ -42,7 +42,7 @@ def generate(config, portal_template=None, material_record=None, lifecycle=None)
     }
     for pos, layer in enumerate(layers):
         index = pos // repeat
-        if wraparound:
+        if wraparound and lasers:
             index %= len(lasers)
         assigned = index < len(lasers) and lasers[index].get("enabled", True)
         if assigned:
