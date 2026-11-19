@@ -6,6 +6,7 @@
  * from -- which is core/records.js's selectableConfigs, reached through the
  * model because the same rule governs what happens on entering the builder.
  */
+import { catalogOptions } from '../core/catalog.js';
 import { savedTime, selectMarkup } from '../core/records.js';
 import { configurationPickerState } from '../core/workflow.js';
 import configurationPickerTemplate from '../templates/configurationPicker.pug';
@@ -13,12 +14,17 @@ import ScreenView from './ScreenView.js';
 
 const ConfigurationPickerView = ScreenView.extend({
     events: {
+        'change #presetSelect': function () { this.model.set('selectedPreset', this.$('#presetSelect').val()); },
         'change #savedConfigs': function () {
             this.model.selectConfig(this.$('#savedConfigs').val());
             this.trigger('g:selected');
         },
         'click #buildConfigBtn': function () { this.trigger('g:build'); },
         'click #configPickerBackBtn': function () { this.trigger('g:home'); }
+    },
+
+    onFirstRender: function () {
+        this.listenTo(this.model, 'change:presets', this.renderContent);
     },
 
     id: 'configurationPicker',
@@ -31,6 +37,8 @@ const ConfigurationPickerView = ScreenView.extend({
 
         const offered = this.model.selectable();
         const active = this.model.get('activeConfig');
+        this.fillPicker('#presetSelect', catalogOptions(this.model.get('presets') || [], 'No preset', this.escapeHtml),
+            active ? active.config?.preset || '' : this.model.get('selectedPreset') || '');
         this.fillPicker('#savedConfigs', selectMarkup(offered, {
             placeholder: 'New configuration',
             escapeHtml: this.escapeHtml,

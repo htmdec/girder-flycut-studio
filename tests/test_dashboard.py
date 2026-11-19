@@ -109,6 +109,23 @@ class GenerationTest(unittest.TestCase):
 
 
 class AssignmentControlsTest(unittest.TestCase):
+    def test_empty_entries_preserve_template_and_capture_metadata(self):
+        config = configuration()
+        config["laser_params"] = []
+        for wrap in [True, False]:
+            config["laser_assignment"] = {"repeat": 1, "wraparound": wrap}
+            files = generate(normalize_config(config, USER, CATALOG))
+            source = ET.parse(Path(__file__).parents[1] / "girder_flycut/inputs/templates/5x5-stack.lbrn2").getroot()
+            result = ET.fromstring(files["stack00005-layout.lbrn2"][0])
+            self.assertEqual(
+                [ET.tostring(c) for c in result.findall(".//CutSetting")],
+                [ET.tostring(c) for c in source.findall(".//CutSetting")],
+            )
+            rows = list(csv.DictReader(io.StringIO(files["stack00005-inventory.csv"][0].decode())))
+            metadata = json.loads(files["stack00005-metadata.json"][0])
+            self.assertTrue(rows)
+            self.assertEqual(float(rows[0]["laser_maxpower"]), float(metadata["flyers"][0]["laser_maxpower"]))
+
     def test_repeat_wrap_and_reserved_positions(self):
         source = ET.parse(Path(__file__).parents[1] / "girder_flycut/inputs/templates/5x5-stack.lbrn2").getroot()
 
@@ -179,8 +196,7 @@ class BuilderExportTest(unittest.TestCase):
         self.assertEqual(result["run_params"]["operator"], USER["login"])
         self.assertEqual(result["run_params"]["stackid"], "00005")
         config["laser_params"] = [dict(config["laser_params"][0], enabled=False)]
-        with self.assertRaises(ValueError):
-            normalize_builder_config(config, USER, CATALOG)
+        normalize_builder_config(config, USER, CATALOG)
 
 
 class SectionSchemaTest(unittest.TestCase):

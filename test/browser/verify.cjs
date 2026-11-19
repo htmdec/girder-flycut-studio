@@ -453,6 +453,53 @@ async function reopen(page, base, id) {
             (await textOf(page, '#laserCount')).startsWith(`${startingLasers + 1} /`),
             await textOf(page, '#laserCount'));
 
+        const power = page.locator('#laserList .laser-card [data-key="power"]').first();
+        await power.fill('');
+        await power.pressSequentially('12.5');
+        check('typing multiple digits keeps focus and the full laser value',
+            await power.inputValue() === '12.5' && await power.evaluate((el) => el === document.activeElement));
+        await power.press('ArrowDown');
+        check('down arrow selects the same field on the next flyer',
+            await page.locator('#laserList .laser-card [data-key="power"]').nth(1)
+                .evaluate((el) => el === document.activeElement));
+        await page.keyboard.press('ArrowUp');
+        check('up arrow returns to the same field on the previous flyer',
+            await power.evaluate((el) => el === document.activeElement));
+        await power.press('Tab');
+        check('tab advances to the next parameter',
+            await page.locator('#laserList .laser-card [data-key="speed"]').first()
+                .evaluate((el) => el === document.activeElement));
+
+        await power.press('Enter');
+        const nextPower = page.locator('#laserList .laser-card [data-key="power"]').nth(1);
+        check('return moves to the next flyer power field',
+            await nextPower.evaluate((el) => el === document.activeElement));
+        await nextPower.press('Shift+Enter');
+        check('shift return moves to the previous flyer power field',
+            await power.evaluate((el) => el === document.activeElement));
+        await power.press('Shift+Enter');
+        check('shift return on the first flyer stays in place',
+            await power.evaluate((el) => el === document.activeElement));
+        await page.locator('#laserList .laser-card').last().locator('[data-key="speed"]').focus();
+        await page.keyboard.press('Enter');
+        check('return on the last flyer focuses Add laser setting',
+            await page.locator('#addLaserBtn').evaluate((el) => el === document.activeElement));
+        await page.keyboard.press('ArrowUp');
+        check('up arrow on Add returns to the last flyer power field',
+            await page.locator('#laserList .laser-card').last().locator('[data-key="power"]')
+                .evaluate((el) => el === document.activeElement));
+        await page.keyboard.press('Enter');
+        const beforeReturn = await laserCards();
+        await page.keyboard.press('+');
+        await page.keyboard.press('=');
+        check('plus and equals do not add flyers', await laserCards() === beforeReturn);
+        await page.keyboard.press('Enter');
+        check('return on Add creates a flyer and focuses its power field',
+            await laserCards() === beforeReturn + 1 &&
+            await page.locator('#laserList .laser-card').last().locator('[data-key="power"]')
+                .evaluate((el) => el === document.activeElement));
+        await page.locator('#laserList .laser-card').last().locator('.remove-laser').click();
+
         // Colours are how the preview and the generated file tell layers apart,
         // so two entries may not share one.
         const firstHex = page.locator('#laserList .laser-card .hex-editor').first();
@@ -487,18 +534,22 @@ async function reopen(page, base, id) {
             (n) => document.querySelectorAll('.g-flycut-dashboard #laserList .laser-card').length === n,
             startingLasers, { timeout: 10000 });
         check('removing an entry puts the list back', await laserCards() === startingLasers);
-        // The form needs at least one entry, and says so rather than emptying.
+        // An empty list leaves all laser settings inherited from the template.
         while (await laserCards() > 1) {
             await page.locator('#laserList .laser-card .remove-laser').last().click();
             await page.waitForTimeout(250);
         }
         await page.locator('#laserList .laser-card .remove-laser').first().click();
         await page.waitForTimeout(400);
-        check('the last laser entry cannot be removed', await laserCards() === 1,
-            await textOf(page, '#toast'));
+        check('the last laser entry can be removed', await laserCards() === 0);
+        await page.click('.g-flycut-dashboard [data-tab="status"]');
+        check('an empty list warns about inheriting template settings',
+            (await textOf(page, '.g-flycut-dashboard')).includes('all parameters inherit the template original settings.'));
+        await page.click('.g-flycut-dashboard [data-tab="preview"]');
 
         // Entries are named for their position, so a reorder renames them --
         // which is why the swatches move and the names do not.
+        await page.click('#addLaserBtn');
         await page.click('#addLaserBtn');
         await page.waitForTimeout(300);
         const colorsBefore = await page.locator('#laserList .color-swatch')

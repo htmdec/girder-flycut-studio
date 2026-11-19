@@ -1,4 +1,7 @@
 .g-flycut-dashboard
+  #builderScreen
+    container-type inline-size
+
   .workspace
     max-width 1480px
     margin auto
@@ -139,9 +142,9 @@
   .viewer-panel.active
     display block
 
-  @media (max-width1000px)
+  @container (max-width: 1000px)
     .workspace
-      grid-template-columns 1fr
+      grid-template-columns minmax(0,1fr)
 
     .form-pane
       border-right 0
@@ -150,7 +153,7 @@
     .viewer-pane
       padding-top 25px
 
-  @media (max-width650px)
+  @container (max-width: 650px)
     .workspace .form-pane
     .viewer-pane
       padding-left 16px

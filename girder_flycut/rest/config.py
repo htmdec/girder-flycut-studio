@@ -20,6 +20,7 @@ from ..drafts import import_uploads
 from ..import_storage import load_input
 from ..materials import foil_materials, resolve_material
 from ..models import FlycutConfig
+from ..presets import load_presets
 from ..registration import is_test_run
 from ..schema import pack, stack_id, unpack
 from ..storage import draft_root, promote, remove_config
@@ -99,12 +100,14 @@ class ConfigRoutes:
     @autoDescribeRoute(Description("Configuration catalog and signed-in operator."))
     @gated
     def options(self, user):
+        presets = load_presets()
+        ranked = sorted({name for preset in presets for name in preset.get("custom_fields", {})})
         return {
             "workspaceFolderId": studio_settings.policy()["workspace_folder_id"],
             "materials": foil_materials(user),
             "templates": CATALOG["templates"],
-            "presets": [],
-            "cache": {"operators": [user["login"]], "field_names": CATALOG["field_names"]},
+            "presets": presets,
+            "cache": {"operators": [user["login"]], "field_names": ranked},
         }
 
     @access.user
@@ -175,12 +178,11 @@ class ConfigRoutes:
     def _snapshot(self, config):
         """The configuration as stored: the packed form, without the operator's identity.
 
-        `createdBy` and `preset` are server-owned, so whatever the client sent
-        for them is dropped rather than trusted.
+        `createdBy` is server-owned and is omitted. The preset ID is retained;
+        submission validates its rules against the server preset file.
         """
         rendered = copy.deepcopy(config) if "run_parameters" in config else pack(config)
         rendered.pop("createdBy", None)
-        rendered["preset"] = None
         return rendered
 
     def _resolved(self, config, user, validated):
@@ -191,7 +193,6 @@ class ConfigRoutes:
         same way.
         """
         config = unpack(config)
-        config["preset"] = None
         is_test_run(config)
         load_input(config, user)
         if isinstance(config.get("run_params"), dict):

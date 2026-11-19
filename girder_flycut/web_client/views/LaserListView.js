@@ -21,6 +21,7 @@ const View = girder.views.View;
 
 const LaserListView = View.extend({
     events: {
+        keydown: 'onShortcut',
         'change #allowWraparound': 'announce',
         'input #repeatX': 'announce',
         'click #addLaserBtn': 'addEntry',
@@ -45,16 +46,14 @@ const LaserListView = View.extend({
             this.collection.setField(this.cardId(event.target), key, value);
             // Switching an entry off changes which of them are used, so the
             // list restates itself; typing a number does not.
-            if (key === 'enabled') { this.render(); }
-            this.announce();
+            if (key === 'enabled') { this.render(); } else {
+                event.target.closest('.laser-card').querySelector('.default-badge')?.remove();
+            }
+            this.trigger('g:changed');
         },
         'change .hex-editor': function (event) { this.commitColor(event.target); },
         'change .wheel-editor': function (event) { this.commitColor(event.target); },
         'keydown .hex-editor': function (event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                this.commitColor(event.target);
-            }
             if (event.key === 'Escape') {
                 const card = event.target.closest('.laser-card');
                 event.target.value = this.collection.get(card.dataset.id).get('color');
@@ -125,6 +124,64 @@ const LaserListView = View.extend({
         // The collection's own `add` is what redraws the list and the viewers;
         // announcing it as well would do both twice.
         this.collection.addEntry({ isDefault: true });
+    },
+
+    onShortcut: function (event) {
+        if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) {
+            return;
+        }
+        const input = event.target;
+        const card = input.closest('.laser-card');
+        if (card && input.matches('input[type="number"], input[type="text"], input[data-key="name"]') &&
+                ['ArrowUp', 'ArrowDown'].includes(event.key)) {
+            // These keys navigate instead of stepping numeric values. At an
+            // end or a locked adjacent flyer, keep the current field selected.
+            event.preventDefault();
+            const adjacent = event.key === 'ArrowUp' ? card.previousElementSibling : card.nextElementSibling;
+            const selector = input.classList.contains('hex-editor')
+                ? '.hex-editor'
+                : `[data-key="${input.dataset.key}"]`;
+            const target = adjacent?.querySelector(selector);
+            if (target && !target.disabled) {
+                target.focus();
+                target.scrollIntoView({ block: 'nearest' });
+            }
+            return;
+        }
+        if (input.id === 'addLaserBtn' &&
+                (event.key === 'ArrowUp' || (event.key === 'Enter' && event.shiftKey))) {
+            event.preventDefault();
+            const target = this.el.querySelector('.laser-card:last-child [data-key="power"]');
+            if (target && !target.disabled) {
+                target.focus();
+                target.scrollIntoView({ block: 'nearest' });
+            }
+            return;
+        }
+        if (event.key === 'Enter') {
+            if (card && input.matches('input[type="number"], input[type="text"], input[data-key="name"]')) {
+                event.preventDefault();
+                const adjacent = event.shiftKey ? card.previousElementSibling : card.nextElementSibling;
+                if (event.shiftKey && !adjacent) { return; }
+                const nextId = adjacent?.dataset.id;
+                if (input.classList.contains('hex-editor')) {
+                    this.commitColor(input);
+                }
+                const target = (nextId && this.el.querySelector(`.laser-card[data-id="${nextId}"] [data-key="power"]`)) ||
+                    this.el.querySelector('#addLaserBtn');
+                if (!target.disabled) {
+                    target.focus();
+                    target.scrollIntoView({ block: 'nearest' });
+                }
+            } else if (input.id === 'addLaserBtn') {
+                event.preventDefault();
+                if (event.repeat || input.disabled) { return; }
+                this.addEntry();
+                const target = this.el.querySelector('.laser-card:last-child [data-key="power"]');
+                target?.focus();
+                target?.scrollIntoView({ block: 'nearest' });
+            }
+        }
     },
 
     /** The only requirement this section owns. */

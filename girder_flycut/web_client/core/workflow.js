@@ -53,10 +53,8 @@ export function configurationPickerState({ activeConfig = null, busy = false } =
                 : 'Build config',
             disabled: busy
         },
-        // Presets are chosen in the builder, not here. The controls are in the
-        // markup and permanently off; G1 decides their fate.
-        '#presetPicker': { hidden: true },
-        '#presetSelect': { disabled: true },
+        '#presetPicker': { hidden: false },
+        '#presetSelect': { disabled: busy || Boolean(activeConfig) },
         '#savedConfigs': { disabled: busy }
     };
 }

@@ -284,8 +284,8 @@ assert.deepEqual(importedLasers({ laser_params: [{ name: 'F1', from_import: true
     .map((l) => [l.fromImport, l.locked]), [[true, true], [false, false]]);
 assert.deepEqual(importedLasers({ laser_params: [{ name: 'F1' }] }, false)
     .map((l) => [l.fromImport, l.locked]), [[true, true]]);
-assert.deepEqual(importedLasers({ laser_params: [] }, false), [{ isDefault: true }],
-    'a foreign import with no entries still gets one to start from');
+assert.deepEqual(importedLasers({ laser_params: [] }, false), [],
+    'an explicit empty import preserves template inheritance');
 assert.deepEqual(importedLasers({ laser_params: [] }, true), [],
     'an empty saved configuration is left empty, because that is what was saved');
 assert.equal(importedLasers({ laser_params: new Array(40).fill({ name: 'F' }) }, false).length, 28,

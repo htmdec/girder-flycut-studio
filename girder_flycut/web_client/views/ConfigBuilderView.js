@@ -23,6 +23,7 @@ import HelpTooltipView from './HelpTooltipView.js';
 import JsonPanelView from './JsonPanelView.js';
 import LaserListView from './LaserListView.js';
 import PreviewView from './PreviewView.js';
+import { presetErrors } from '../core/presets.js';
 import RunParametersView from './RunParametersView.js';
 import StatusPanelView from './StatusPanelView.js';
 import '../stylesheets/builder.styl';
@@ -158,7 +159,10 @@ const ConfigBuilderView = View.extend({
                 frequency: Number(laser.frequency),
                 passes: Number(laser.passes)
             })),
-            custom_fields: this.customFields.asObject()
+            custom_fields: Object.fromEntries(Object.entries(this.customFields.asObject()).map(([name, value]) => {
+                const rule = this.model.activePreset()?.custom_fields?.[name];
+                return [name, rule?.type === 'number' && value !== null && Number.isFinite(Number(value)) ? Number(value) : value];
+            }))
         };
     },
 
@@ -190,7 +194,7 @@ const ConfigBuilderView = View.extend({
     configurationStatus: function () {
         const raw = this.runParameters.raw();
         const values = this.runParameters.values();
-        return assessConfiguration({
+        const result = assessConfiguration({
             ...this.laserList.assignment(),
             presetFields: this.model.presetFieldNames(),
             stackState: this.model.get('stackStates')?.[raw.stackId.trim().toUpperCase()],
@@ -203,6 +207,14 @@ const ConfigBuilderView = View.extend({
             fields: this.customFields.plain(),
             layers: this.model.get('templateDetail')?.layers ?? null
         });
+        const errors = presetErrors(this.model.activePreset(), this.configObject());
+        if (this.model.get('preset') && !this.model.activePreset()) errors.push('Unknown preset.');
+        if (errors.length) {
+            result.complete = false;
+            result.status = 'Incomplete';
+            result.violations.push(...errors.map((text) => ({ text, kind: 'Required', target: '#backWorkflowBtn' })));
+        }
+        return result;
     },
 
     /**
@@ -282,8 +294,7 @@ const ConfigBuilderView = View.extend({
             this.model.set({
                 materials: options.materials,
                 templates: options.templates,
-                // Presets are not offered anywhere yet; see G1.
-                presets: [],
+                presets: options.presets || [],
                 knownOperators: options.cache?.operators || [],
                 knownFieldNames: options.cache?.field_names || []
             });
@@ -293,6 +304,27 @@ const ConfigBuilderView = View.extend({
             this.runParameters.renderUnavailable();
         }
         this.refresh();
+    },
+
+    applyPreset: async function (id) {
+        this.model.set('preset', id || null);
+        const preset = this.model.activePreset();
+        this.runParameters.renderCatalog();
+        const run = this.runParameters.values();
+        for (const [key, allowed] of [['template', 'templates'], ['foil_material', 'materials']]) {
+            if (preset?.[allowed] && !preset[allowed].includes(run[key])) run[key] = preset[allowed][0] || '';
+        }
+        this.runParameters.fill(run);
+        this.runParameters.releaseStackId();
+        if (preset?.automate_stack_id) this.runParameters.setAssignedStackId((await this.nextStackId()).stackid);
+        this.$('#autoStackIdBtn').prop('disabled', Boolean(preset?.automate_stack_id));
+        if (preset) {
+            const count = Math.min(preset.flyer_layers?.max ?? 28, Math.max(1, preset.flyer_layers?.min ?? 0));
+            this.lasers.replaceAll(Array.from({ length: count }, () => ({ isDefault: true, ...preset.laser_defaults })));
+            this.customFields.replaceAll(Object.entries(preset.custom_fields || {}).map(([name, rule]) => ({ name, value: rule?.default ?? (typeof rule === 'object' ? null : rule) })));
+        }
+        this.customFieldsView.render();
+        await this.changeTemplate();
     },
 
     fetchTemplate: function (id) {
@@ -338,6 +370,8 @@ const ConfigBuilderView = View.extend({
         this.$('#configForm')[0].reset();
         this.runParameters.setOperator(this.currentUser.get('login'));
         this.model.set({ preset: null, templateDetail: null, parameterImportFile: null, zoom: 1 });
+        this.runParameters.renderCatalog();
+        this.$('#autoStackIdBtn').prop('disabled', false);
         const preset = this.model.activePreset();
         this.lasers.replaceAll([{ isDefault: true, ...(preset?.laser_defaults || {}) }]);
         this.customFields.replaceAll(Object.entries(preset?.custom_fields || {})
@@ -353,7 +387,8 @@ const ConfigBuilderView = View.extend({
      */
     load: async function (config, savedSnapshot = false, name = null) {
         const cfg = toFormShape(config);
-        this.model.set('preset', null);
+        this.model.set('preset', cfg.preset || null);
+        this.runParameters.renderCatalog();
         // A template browsed to from the portal is not in the catalog, so it
         // has to be fetched back before the picker can show it as selected.
         const templateId = cfg.run_params?.template;
@@ -367,6 +402,8 @@ const ConfigBuilderView = View.extend({
             savedSnapshot ? cfg.parameter_import_file ?? null : name);
         this.lasers.replaceAll(importedLasers(cfg, savedSnapshot));
         this.customFields.replaceAll(customFieldRows(cfg));
+        if (this.model.activePreset()?.automate_stack_id) this.runParameters.setAssignedStackId(cfg.run_params.stackid);
+        this.$('#autoStackIdBtn').prop('disabled', Boolean(this.model.activePreset()?.automate_stack_id));
         await this.changeTemplate();
     },
 
@@ -428,7 +465,9 @@ const ConfigBuilderView = View.extend({
             return;
         }
         // The button is a toggle: pressed means the server chose the value.
-        if (this.runParameters.isStackIdAssigned()) {
+        if (this.model.activePreset()?.automate_stack_id) {
+            this.runParameters.setAssignedStackId((await this.nextStackId()).stackid);
+        } else if (this.runParameters.isStackIdAssigned()) {
             this.runParameters.releaseStackId(true);
         } else {
             this.runParameters.setAssignedStackId((await this.nextStackId()).stackid);

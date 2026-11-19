@@ -24,9 +24,6 @@ import LaserModel from '../models/LaserModel.js';
 
 const Backbone = girder.Backbone;
 
-/** Refused because the form cannot describe a stack with no laser at all. */
-const LAST_ENTRY = 'At least one laser setting is required.';
-
 const LaserCollection = Backbone.Collection.extend({
     model: LaserModel,
 
@@ -76,9 +73,6 @@ const LaserCollection = Backbone.Collection.extend({
      * @returns {?string} why it was refused, or null if it was removed
      */
     removeEntry: function (id) {
-        if (this.length <= 1) {
-            return LAST_ENTRY;
-        }
         this.apply((lasers) => normalizeLayerNames(lasers.filter((item) => item.id !== id)));
         return null;
     },
@@ -145,5 +139,4 @@ const LaserCollection = Backbone.Collection.extend({
     }
 });
 
-export { LAST_ENTRY };
 export default LaserCollection;

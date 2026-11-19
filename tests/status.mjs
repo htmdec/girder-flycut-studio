@@ -23,7 +23,7 @@ const base = {
 
 assert.equal(assess(base).status, 'Complete');
 assert.equal(assess({ ...base, stackId: '' }).status, 'Incomplete');
-assert.equal(assess({ ...base, lasers: [{ enabled: false }] }).status, 'Incomplete');
+assert.equal(assess({ ...base, lasers: [{ enabled: false }] }).status, 'Needs validation');
 assert.equal(assess({ ...base, fields: [{ name: '', value: '3' }] }).status, 'Incomplete');
 for (const stackId of ['F123', 'F1234', '0AZ9Z']) {
     assert.equal(assess({ ...base, stackId }).status, 'Complete');
