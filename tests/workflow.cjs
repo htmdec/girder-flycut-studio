@@ -54,12 +54,13 @@ controls = render({ ...generated, status: 'registered', registration: { igsn: 'J
 assert.equal(controls['#viewIgsnLink'].hidden, false);
 assert.equal(controls['#viewIgsnLink'].href, '#igsn/JHAMAB00010-00001');
 assert(controls['#registerStackBtn'].disabled);
-assert(controls['#presetPicker'].hidden);
-assert(controls['#presetSelect'].disabled);
+assert.equal(controls['#presetPicker'].hidden, false);
+assert.equal(controls['#presetSelect'].disabled, true);
+assert.equal(render(null)['#presetSelect'].disabled, false);
 assert(render(generated)['#viewIgsnLink'].hidden);
 // A mock registration is not a real IGSN, so it gets no link.
 assert(render({ ...generated, status: 'registered', registration: { igsn: 'JHAMAB00010-00002', mock: true } })['#viewIgsnLink'].hidden);
-console.log('Registration link and disabled presets passed.');
+console.log('Registration link and preset selection passed.');
 
 // Folder links and hints follow the selected record, not the active one.
 const withFolder = workflowState({ saved: [generated], generationId: 'config1' });

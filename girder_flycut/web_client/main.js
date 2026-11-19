@@ -197,6 +197,7 @@ const Dashboard = View.extend({
                 }, true, activeConfig.name);
             } else {
                 builder.blank();
+                await builder.applyPreset(workflow.get('selectedPreset') || null);
             }
             builder.saveAsName(activeConfig?.name || '');
             setReadOnly(Boolean(activeConfig &&
@@ -361,6 +362,7 @@ const Dashboard = View.extend({
         };
 
         await builder.loadCatalog();
+        workflow.set('presets', builder.model.get('presets'));
         builder.blank();
         await refresh();
     },

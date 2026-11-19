@@ -45,7 +45,7 @@ def test_name_is_length_checked_even_when_it_is_discarded():
 
 def test_snapshot_drops_what_the_server_owns():
     packed = {"run_parameters": {"stackid": "00005"}, "createdBy": "spoofed", "preset": "spoofed"}
-    assert ROUTES._snapshot(packed) == {"run_parameters": {"stackid": "00005"}, "preset": None}
+    assert ROUTES._snapshot(packed) == {"run_parameters": {"stackid": "00005"}, "preset": "spoofed"}
 
 
 def test_snapshot_packs_the_section_form_and_does_not_alias_it():

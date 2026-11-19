@@ -8,6 +8,7 @@ import re
 from girder.utility import JsonEncoder
 
 from .schema import unpack
+from .presets import validate_preset
 
 
 def _validate_run_params(config, user, catalog, submitted):
@@ -93,6 +94,7 @@ def normalize_config(config, user, catalog, submitted=False):
     config["laser_assignment"] = {"repeat": repeat, "wraparound": wraparound}
     _validate_lasers(config.get("laser_params"))
     _validate_custom_fields(config.get("custom_fields", {}), submitted)
+    validate_preset(config)
     return config
 
 
@@ -139,14 +141,13 @@ def normalize_builder_config(config, user, catalog):
         not name.strip() and value is not None and str(value).strip() for name, value in fields.items()
     ):
         raise ValueError("Custom fields with values need names.")
-    # Presets are disabled; retain explicit settings/custom fields from old configs.
-    result["preset"] = None
     result["custom_fields"] = {
         name: value if value is not None and str(value).strip() else None
         for name, value in fields.items()
         if name.strip()
     }
     run["stackid"] = run["stackid"].strip()
+    validate_preset(result)
     run["operator"] = str(run.get("operator") or "").strip() or user["login"]
     result["createdBy"] = str(user["_id"])
     return result

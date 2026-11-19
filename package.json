@@ -14,7 +14,7 @@
     "dev": "npm --prefix girder_flycut/web_client run dev",
     "lint": "eslint . && pug-lint girder_flycut && NODE_OPTIONS=--no-deprecation stylelint \"girder_flycut/**/*.styl\"",
     "format": "eslint --fix .",
-    "test": "node tests/core.mjs && node tests/status.mjs && node tests/workflow.cjs && node tests/complete_workflow.cjs && node tests/bundle.cjs"
+    "test": "node tests/presets.mjs && node tests/core.mjs && node tests/status.mjs && node tests/workflow.cjs && node tests/complete_workflow.cjs && node tests/bundle.cjs"
   },
   "devDependencies": {
     "@girder/eslint-config": "^3.2.17",

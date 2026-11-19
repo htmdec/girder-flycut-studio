@@ -10,14 +10,30 @@
       "passes": 1
     },
     "custom_fields": {
-      "glass_tl_mm": null,
-      "glass_tr_mm": null,
-      "glass_bl_mm": null,
-      "glass_br_mm": null,
-      "foil_tl_um": null,
-      "foil_tr_um": null,
-      "foil_bl_um": null,
-      "foil_br_um": null
+      "glass_tl_mm": {
+        "default": null
+      },
+      "glass_tr_mm": {
+        "default": null
+      },
+      "glass_bl_mm": {
+        "default": null
+      },
+      "glass_br_mm": {
+        "default": null
+      },
+      "foil_tl_um": {
+        "default": null
+      },
+      "foil_tr_um": {
+        "default": null
+      },
+      "foil_bl_um": {
+        "default": null
+      },
+      "foil_br_um": {
+        "default": null
+      }
     }
   }
 ]

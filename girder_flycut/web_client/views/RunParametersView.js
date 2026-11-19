@@ -25,7 +25,7 @@ const RunParametersView = View.extend({
     },
 
     initialize: function () {
-        this.listenTo(this.model, 'change:materials change:templates', this.renderCatalog);
+        this.listenTo(this.model, 'change:materials change:templates change:presets', this.renderCatalog);
     },
 
     tagName: 'details',
@@ -47,18 +47,20 @@ const RunParametersView = View.extend({
      * been loaded into the inputs before it lands.
      */
     renderCatalog: function () {
+        const preset = this.model.activePreset();
         const material = this.$('#foilMaterial').val();
         const template = this.$('#template').val();
         this.$('#foilMaterial').html(
-            catalogOptions(this.model.get('materials'), 'Choose a foil material', escapeHtml));
+            catalogOptions(this.model.get('materials').filter((row) => !preset?.materials || preset.materials.includes(row.id)), 'Choose a foil material', escapeHtml));
         this.$('#template').html(
-            catalogOptions(this.model.get('templates'), 'Choose a template', escapeHtml));
+            catalogOptions(this.model.get('templates').filter((row) => !preset?.templates || preset.templates.includes(row.id)), 'Choose a template', escapeHtml));
         this.$('#foilMaterial').val(material);
         this.$('#template').val(template);
         this.$('#operatorNames').html(this.model.get('knownOperators')
             .map((name) => `<option value="${escapeHtml(name)}"></option>`).join(''));
         this.renderMaterialNote();
         this.renderTemplateNote();
+        this.$('#browseTemplateBtn').prop('disabled', Boolean(preset?.templates));
     },
 
     /** Girder could not be reached, so nothing can be chosen. */
